@@ -3,7 +3,7 @@ Benjamin Chan
 
 Course map for the [Friends of Mt Tabor Park Tar n Trail Run](http://www.runannie.net/).
 
-2014-09-19 12:15:06
+2014-09-19 15:10:31
 
 R version 3.1.1 (2014-07-10)
 
@@ -71,12 +71,42 @@ Convert elevation from meters to feet.
 tracks$ele <- as.numeric(tracks$ele) * 3.28084
 ```
 
+Smooth the elevation data.
+The bandwidth parameter was set using trial-and-error.
+Use kernal smoothing instead of LOESS.
+
+
+```r
+smoothed <- ksmooth(tracks$distCumulativeMiles, tracks$ele, bandwidth=0.1)
+tracks$eleSmoothed <- smoothed$y
+# smoothed <- loess(ele ~ distCumulativeMiles, tracks, span=0.1)
+# tracks$eleSmoothed <- predict(smoothed)
+head(tracks)
+```
+
+```
+##      lon   lat   ele                 time extensions distIncremental
+## 1 -122.6 45.51 512.1 2014-09-14T15:16:36Z         92         0.00000
+## 2 -122.6 45.51 513.8 2014-09-14T15:16:47Z         92         0.01280
+## 3 -122.6 45.51 515.7 2014-09-14T15:16:52Z         93         0.01247
+## 4 -122.6 45.51 517.4 2014-09-14T15:17:00Z         92         0.02583
+## 5 -122.6 45.51 507.9 2014-09-14T15:17:08Z         93         0.02652
+## 6 -122.6 45.51 501.6 2014-09-14T15:17:17Z         93         0.02619
+##   distCumulative distCumulativeMiles mile eleSmoothed
+## 1        0.00000            0.000000    0       513.4
+## 2        0.01280            0.007952    0       513.4
+## 3        0.02527            0.015703    0       511.4
+## 4        0.05111            0.031755    0       509.6
+## 5        0.07763            0.048235    0       506.8
+## 6        0.10382            0.064512    0       501.1
+```
+
 Calculate elevation gain.
 
 
 ```r
 tracks$eleChange <- NA
-tracks$eleChange[2:nrow(tracks)] <- tracks$ele[2:nrow(tracks)] - tracks$ele[1:nrow(tracks)-1]
+tracks$eleChange[2:nrow(tracks)] <- tracks$eleSmoothed[2:nrow(tracks)] - tracks$eleSmoothed[1:nrow(tracks)-1]
 tracks$eleGain <- pmax(tracks$eleChange, 0)
 tracks$eleLoss <- -pmin(tracks$eleChange, 0)
 ```
@@ -93,8 +123,8 @@ message(sprintf("Total distance: %.2f kilometers\nTotal elevation gain: %.0f fee
 
 ```
 ## Total distance: 10.02 kilometers
-## Total elevation gain: 1190 feet
-## Total elevation loss: 1084 feet
+## Total elevation gain: 877 feet
+## Total elevation loss: 774 feet
 ```
 
 Create `trail` variable.
@@ -118,12 +148,12 @@ continuity
 ##        lon   lat   ele                 time extensions distIncremental
 ## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
 ## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
-##     distCumulative distCumulativeMiles mile eleChange eleGain eleLoss
-## 151          2.841               1.765    1    -3.281   0.000   3.281
-## 284          5.975               3.713    3     4.921   4.921   0.000
-##     trail
-## 151   Red
-## 284  Blue
+##     distCumulative distCumulativeMiles mile eleSmoothed eleChange eleGain
+## 151          2.841               1.765    1       460.1     3.281   3.281
+## 284          5.975               3.713    3       481.8    -6.749   0.000
+##     eleLoss trail
+## 151   0.000   Red
+## 284   6.749  Blue
 ```
 
 ```r
@@ -135,12 +165,12 @@ continuity
 ##        lon   lat   ele                 time extensions distIncremental
 ## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
 ## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
-##     distCumulative distCumulativeMiles mile eleChange eleGain eleLoss
-## 151          2.841               1.765    1    -3.281   0.000   3.281
-## 284          5.975               3.713    3     4.921   4.921   0.000
-##     trail
-## 151 Green
-## 284 Green
+##     distCumulative distCumulativeMiles mile eleSmoothed eleChange eleGain
+## 151          2.841               1.765    1       460.1     3.281   3.281
+## 284          5.975               3.713    3       481.8    -6.749   0.000
+##     eleLoss trail
+## 151   0.000 Green
+## 284   6.749 Green
 ```
 
 ```r
@@ -315,7 +345,7 @@ Elevation chart.
 a1 <- sprintf("Total elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
               sum(tracks$eleGain, na.rm=TRUE),
               sum(tracks$eleLoss, na.rm=TRUE))
-ggplot(tracks, aes(x=distCumulativeMiles, y=ele, color=trail)) +
+ggplot(tracks, aes(x=distCumulativeMiles, y=eleSmoothed, color=trail)) +
   geom_line(alpha=2/3, size=2) +
   scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
   scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +

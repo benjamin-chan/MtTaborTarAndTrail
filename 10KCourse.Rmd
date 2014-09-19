@@ -65,11 +65,23 @@ Convert elevation from meters to feet.
 tracks$ele <- as.numeric(tracks$ele) * 3.28084
 ```
 
+Smooth the elevation data.
+The bandwidth parameter was set using trial-and-error.
+Use kernal smoothing instead of LOESS.
+
+```{r}
+smoothed <- ksmooth(tracks$distCumulativeMiles, tracks$ele, bandwidth=0.1)
+tracks$eleSmoothed <- smoothed$y
+# smoothed <- loess(ele ~ distCumulativeMiles, tracks, span=0.1)
+# tracks$eleSmoothed <- predict(smoothed)
+head(tracks)
+```
+
 Calculate elevation gain.
 
 ```{r}
 tracks$eleChange <- NA
-tracks$eleChange[2:nrow(tracks)] <- tracks$ele[2:nrow(tracks)] - tracks$ele[1:nrow(tracks)-1]
+tracks$eleChange[2:nrow(tracks)] <- tracks$eleSmoothed[2:nrow(tracks)] - tracks$eleSmoothed[1:nrow(tracks)-1]
 tracks$eleGain <- pmax(tracks$eleChange, 0)
 tracks$eleLoss <- -pmin(tracks$eleChange, 0)
 ```
@@ -258,7 +270,7 @@ Elevation chart.
 a1 <- sprintf("Total elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
               sum(tracks$eleGain, na.rm=TRUE),
               sum(tracks$eleLoss, na.rm=TRUE))
-ggplot(tracks, aes(x=distCumulativeMiles, y=ele, color=trail)) +
+ggplot(tracks, aes(x=distCumulativeMiles, y=eleSmoothed, color=trail)) +
   geom_line(alpha=2/3, size=2) +
   scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
   scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
