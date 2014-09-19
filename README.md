@@ -3,7 +3,7 @@ Benjamin Chan
 
 Course map for the [Friends of Mt Tabor Park Tar n Trail Run](http://www.runannie.net/).
 
-2014-09-19 11:00:24
+2014-09-19 11:20:51
 
 R version 3.1.1 (2014-07-10)
 
@@ -64,6 +64,44 @@ Create `trail` variable.
 
 ```r
 tracks$trail <- cut(tracks$distCumulative, breaks=c(0, 2.85, 5.95, max(tracks$distCumulative)), labels=c("Red", "Green", "Blue"), include.lowest=TRUE)
+```
+
+Fix the discontinuity between trail transitions.
+
+
+```r
+transitions <- c(2.84, 5.97)
+delta <- 0.025
+continuity <- tracks[which(transitions - delta < tracks$distCumulative & tracks$distCumulative < transitions + delta), ]
+continuity
+```
+
+```
+##        lon   lat   ele                 time extensions distIncremental
+## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
+## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
+##     distCumulative trail
+## 151          2.841   Red
+## 284          5.975  Blue
+```
+
+```r
+continuity$trail <- "Green"
+continuity
+```
+
+```
+##        lon   lat   ele                 time extensions distIncremental
+## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
+## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
+##     distCumulative trail
+## 151          2.841 Green
+## 284          5.975 Green
+```
+
+```r
+tracks <- rbind(tracks, continuity)
+tracks <- tracks[order(tracks$time), ]
 ```
 
 Fix a stupid bug in get_map.
@@ -215,7 +253,7 @@ Course map.
 
 ```r
 ggmap(mapTabor, base_layer=ggplot(tracks, aes(x=lon, y=lat, color=trail))) +
-  geom_path(alpha=1, size=2) +
+  geom_path(alpha=2/3, size=2) +
   annotate("text", label="Start", x=tracks[1, "lon"], y=tracks[1, "lat"]) +
   annotate("text", label="Finish", x=tracks[nrow(tracks), "lon"], y=tracks[nrow(tracks), "lat"]) +
   scale_color_discrete("Trail") +
@@ -230,7 +268,7 @@ Elevation chart.
 
 ```r
 ggplot(tracks, aes(x=distCumulative * 0.621371, y=ele, color=trail)) +
-  geom_line(size=2) +
+  geom_line(alpha=2/3, size=2) +
   scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
   scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
   scale_color_discrete("Trail") +
