@@ -3,7 +3,7 @@ Benjamin Chan
 
 Course map for the [Friends of Mt Tabor Park Tar n Trail Run](http://www.runannie.net/).
 
-2014-09-19 16:13:57
+2014-09-19 16:32:59
 
 R version 3.1.1 (2014-07-10)
 
@@ -298,11 +298,12 @@ Get map layer.
 
 
 ```r
-mapTabor <- get_map(location=gmean, maptype="terrain", source="stamen", zoom=16)
+# mapTabor <- get_map(location=gmean, maptype="terrain", source="stamen", zoom=16)
+mapTabor <- get_map(location=gmean, maptype="hybrid", zoom=16)
 ```
 
 ```
-## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=45.512117,-122.595166&zoom=16&size=%20640x640&maptype=terrain&sensor=false
+## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=45.512117,-122.595166&zoom=16&size=%20640x640&scale=%202&maptype=hybrid&sensor=false
 ## Google Maps API Terms of Service : http://developers.google.com/maps/terms
 ```
 
@@ -312,9 +313,9 @@ Course map.
 ```r
 ggmap(mapTabor, base_layer=ggplot(tracks, aes(x=lon, y=lat, color=trail))) +
   geom_path(alpha=2/3, size=2) +
-  annotate("text", label="Start", x=tracks[1, "lon"], y=tracks[1, "lat"]) +
-  annotate("text", label="Finish", x=tracks[nrow(tracks), "lon"], y=tracks[nrow(tracks), "lat"]) +
-  annotate("text", label=milePosts[, "mile"], x=milePosts[, "lon"], y=milePosts[, "lat"]) +
+  annotate("text", label="Start", x=tracks[1, "lon"], y=tracks[1, "lat"], color="white") +
+  annotate("text", label="Finish", x=tracks[nrow(tracks), "lon"], y=tracks[nrow(tracks), "lat"], color="white") +
+  annotate("text", label=milePosts[, "mile"], x=milePosts[, "lon"], y=milePosts[, "lat"], color="white") +
   scale_color_discrete("Trail") +
   labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K") +
   theme(axis.text=element_blank(), axis.title=element_blank(), axis.ticks=element_blank())

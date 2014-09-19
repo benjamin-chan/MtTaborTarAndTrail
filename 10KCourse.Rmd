@@ -249,7 +249,8 @@ assignInNamespace("get_stamenmap", get_stamenmap, ns="ggmap")
 Get map layer.
 
 ```{r}
-mapTabor <- get_map(location=gmean, maptype="terrain", source="stamen", zoom=16)
+# mapTabor <- get_map(location=gmean, maptype="terrain", source="stamen", zoom=16)
+mapTabor <- get_map(location=gmean, maptype="hybrid", zoom=16)
 ```
 
 Course map.
@@ -257,9 +258,9 @@ Course map.
 ```{r 10Kmap, dpi=600, fig.height=7, fig.width=7}
 ggmap(mapTabor, base_layer=ggplot(tracks, aes(x=lon, y=lat, color=trail))) +
   geom_path(alpha=2/3, size=2) +
-  annotate("text", label="Start", x=tracks[1, "lon"], y=tracks[1, "lat"]) +
-  annotate("text", label="Finish", x=tracks[nrow(tracks), "lon"], y=tracks[nrow(tracks), "lat"]) +
-  annotate("text", label=milePosts[, "mile"], x=milePosts[, "lon"], y=milePosts[, "lat"]) +
+  annotate("text", label="Start", x=tracks[1, "lon"], y=tracks[1, "lat"], color="white") +
+  annotate("text", label="Finish", x=tracks[nrow(tracks), "lon"], y=tracks[nrow(tracks), "lat"], color="white") +
+  annotate("text", label=milePosts[, "mile"], x=milePosts[, "lon"], y=milePosts[, "lat"], color="white") +
   scale_color_discrete("Trail") +
   labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K") +
   theme(axis.text=element_blank(), axis.title=element_blank(), axis.ticks=element_blank())
