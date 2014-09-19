@@ -3,7 +3,7 @@ Benjamin Chan
 
 Course map for the [Friends of Mt Tabor Park Tar n Trail Run](http://www.runannie.net/).
 
-2014-09-19 11:20:51
+2014-09-19 11:37:58
 
 R version 3.1.1 (2014-07-10)
 
@@ -45,11 +45,6 @@ p1 <- tracks[1:nrow(tracks)-1, c("lon", "lat")]
 p2 <- tracks[2:nrow(tracks), c("lon", "lat")]
 tracks$distIncremental[2:nrow(tracks)] <- distHaversine(p1, p2) / 1000
 tracks$distCumulative <- cumsum(tracks$distIncremental)
-message(sprintf("Distance: %.2f kilometers", sum(tracks$distIncremental, na.rm=TRUE)))
-```
-
-```
-## Distance: 10.02 kilometers
 ```
 
 Convert elevation from meters to feet.
@@ -57,6 +52,32 @@ Convert elevation from meters to feet.
 
 ```r
 tracks$ele <- as.numeric(tracks$ele) * 3.28084
+```
+
+Calculate elevation gain.
+
+
+```r
+tracks$eleChange <- NA
+tracks$eleChange[2:nrow(tracks)] <- tracks$ele[2:nrow(tracks)] - tracks$ele[1:nrow(tracks)-1]
+tracks$eleGain <- pmax(tracks$eleChange, 0)
+tracks$eleLoss <- -pmin(tracks$eleChange, 0)
+```
+
+Print course statistics.
+
+
+```r
+message(sprintf("Total distance: %.2f kilometers\nTotal elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
+                sum(tracks$distIncremental, na.rm=TRUE),
+                sum(tracks$eleGain, na.rm=TRUE),
+                sum(tracks$eleLoss, na.rm=TRUE)))
+```
+
+```
+## Total distance: 10.02 kilometers
+## Total elevation gain: 1190 feet
+## Total elevation loss: 1084 feet
 ```
 
 Create `trail` variable.
@@ -80,9 +101,9 @@ continuity
 ##        lon   lat   ele                 time extensions distIncremental
 ## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
 ## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
-##     distCumulative trail
-## 151          2.841   Red
-## 284          5.975  Blue
+##     distCumulative eleChange eleGain eleLoss trail
+## 151          2.841    -3.281   0.000   3.281   Red
+## 284          5.975     4.921   4.921   0.000  Blue
 ```
 
 ```r
@@ -94,9 +115,9 @@ continuity
 ##        lon   lat   ele                 time extensions distIncremental
 ## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
 ## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
-##     distCumulative trail
-## 151          2.841 Green
-## 284          5.975 Green
+##     distCumulative eleChange eleGain eleLoss trail
+## 151          2.841    -3.281   0.000   3.281 Green
+## 284          5.975     4.921   4.921   0.000 Green
 ```
 
 ```r
@@ -267,11 +288,15 @@ Elevation chart.
 
 
 ```r
+a1 <- sprintf("Total elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
+              sum(tracks$eleGain, na.rm=TRUE),
+              sum(tracks$eleLoss, na.rm=TRUE))
 ggplot(tracks, aes(x=distCumulative * 0.621371, y=ele, color=trail)) +
   geom_line(alpha=2/3, size=2) +
   scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
   scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
   scale_color_discrete("Trail") +
+  annotate("text", label=a1, x=Inf, y=0, hjust=1, vjust=0) +
   labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K")
 ```
 
