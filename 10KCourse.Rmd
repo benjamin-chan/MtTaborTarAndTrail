@@ -70,11 +70,10 @@ The bandwidth parameter was set using trial-and-error.
 Use kernal smoothing instead of LOESS.
 
 ```{r}
-smoothed <- ksmooth(tracks$distCumulativeMiles, tracks$ele, bandwidth=0.1)
+smoothed <- ksmooth(tracks$distCumulativeMiles, tracks$ele, "normal", bandwidth=0.05)
 tracks$eleSmoothed <- smoothed$y
 # smoothed <- loess(ele ~ distCumulativeMiles, tracks, span=0.1)
 # tracks$eleSmoothed <- predict(smoothed)
-head(tracks)
 ```
 
 Calculate elevation gain.
@@ -89,10 +88,12 @@ tracks$eleLoss <- -pmin(tracks$eleChange, 0)
 Print course statistics.
 
 ```{r}
+totalGain <- sum(tracks$eleGain, na.rm=TRUE)
+totalLoss <- sum(tracks$eleLoss, na.rm=TRUE)
 message(sprintf("Total distance: %.2f kilometers\nTotal elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
                 sum(tracks$distIncremental, na.rm=TRUE),
-                sum(tracks$eleGain, na.rm=TRUE),
-                sum(tracks$eleLoss, na.rm=TRUE)))
+                totalGain,
+                totalLoss))
 ```
 
 Create `trail` variable.
@@ -268,13 +269,13 @@ Elevation chart.
 
 ```{r 10Kelevation, dpi=600, fig.height=3, fig.width=7}
 a1 <- sprintf("Total elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
-              sum(tracks$eleGain, na.rm=TRUE),
-              sum(tracks$eleLoss, na.rm=TRUE))
+              totalGain,
+              totalLoss)
 ggplot(tracks, aes(x=distCumulativeMiles, y=eleSmoothed, color=trail)) +
   geom_line(alpha=2/3, size=2) +
   scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
   scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
   scale_color_discrete("Trail") +
-  annotate("text", label=a1, x=Inf, y=0, hjust=1, vjust=0) +
+  annotate("text", label=a1, x=Inf, y=0, hjust=1, vjust=0, size=theme_get()$text[["size"]]/4) +
   labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K")
 ```
