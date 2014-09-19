@@ -24,13 +24,31 @@ D <- readGPX(f)
 tracks <- D$tracks[[1]][[1]]
 ```
 
-
 Find the geometric mean of the coordinates in the GPX file.
 
 ```{r}
 require(geosphere, quietly=TRUE)
 gmean <- geomean(tracks[, c("lon", "lat")])
 gmean
+```
+
+Calculate distances.
+Use the Haversine algorithm.
+
+```{r}
+require(geosphere, quietly=TRUE)
+tracks$distIncremental <- 0
+p1 <- tracks[1:nrow(tracks)-1, c("lon", "lat")]
+p2 <- tracks[2:nrow(tracks), c("lon", "lat")]
+tracks$distIncremental[2:nrow(tracks)] <- distHaversine(p1, p2) / 1000
+tracks$distCumulative <- cumsum(tracks$distIncremental)
+message(sprintf("Distance: %.2f kilometers", sum(tracks$distIncremental, na.rm=TRUE)))
+```
+
+Convert elevation from meters to feet.
+
+```{r}
+tracks$ele <- as.numeric(tracks$ele) * 3.28084
 ```
 
 Fix a stupid bug in get_map.
@@ -44,6 +62,7 @@ get_stamenmap <- function (bbox = c(left = -95.80204, bottom = 29.38048, right =
     "toner"), crop = TRUE, messaging = FALSE, urlonly = FALSE, 
     filename = "ggmapTemp", color = c("color", "bw"), ...) 
 {
+    require(jpeg)
     args <- as.list(match.call(expand.dots = TRUE)[-1])
     argsgiven <- names(args)
     if ("bbox" %in% argsgiven) {
@@ -169,13 +188,23 @@ Get map layer.
 mapTabor <- get_map(location=gmean, maptype="terrain", source="stamen", zoom=16)
 ```
 
-Plot course.
+Course map.
 
-```{r 10K, dpi=600, fig.height=7, fig.width=7}
+```{r 10Kmap, dpi=600, fig.height=7, fig.width=7}
 ggmap(mapTabor, base_layer=ggplot(tracks, aes(x=lon, y=lat))) +
   geom_path(alpha=1, color="purple", size=1) +
   annotate("text", label="Start", x=tracks[1, "lon"], y=tracks[1, "lat"]) +
   annotate("text", label="Finish", x=tracks[nrow(tracks), "lon"], y=tracks[nrow(tracks), "lat"]) +
   labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K") +
   theme(axis.text=element_blank(), axis.title=element_blank(), axis.ticks=element_blank())
+```
+
+Elevation chart.
+
+```{r 10Kelevation, dpi=600, fig.height=3, fig.width=7}
+ggplot(tracks, aes(x=distCumulative * 0.621371, y=ele)) +
+  geom_line(size=2) +
+  scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
+  scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
+  labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K")
 ```

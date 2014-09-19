@@ -3,7 +3,7 @@ Benjamin Chan
 
 Course map for the [Friends of Mt Tabor Park Tar n Trail Run](http://www.runannie.net/).
 
-2014-09-14 22:08:21
+2014-09-19 10:36:03
 
 R version 3.1.1 (2014-07-10)
 
@@ -20,7 +20,6 @@ D <- readGPX(f)
 tracks <- D$tracks[[1]][[1]]
 ```
 
-
 Find the geometric mean of the coordinates in the GPX file.
 
 
@@ -35,6 +34,31 @@ gmean
 ## [1,] -122.6 45.51
 ```
 
+Calculate distances.
+Use the Haversine algorithm.
+
+
+```r
+require(geosphere, quietly=TRUE)
+tracks$distIncremental <- 0
+p1 <- tracks[1:nrow(tracks)-1, c("lon", "lat")]
+p2 <- tracks[2:nrow(tracks), c("lon", "lat")]
+tracks$distIncremental[2:nrow(tracks)] <- distHaversine(p1, p2) / 1000
+tracks$distCumulative <- cumsum(tracks$distIncremental)
+message(sprintf("Distance: %.2f kilometers", sum(tracks$distIncremental, na.rm=TRUE)))
+```
+
+```
+## Distance: 10.02 kilometers
+```
+
+Convert elevation from meters to feet.
+
+
+```r
+tracks$ele <- as.numeric(tracks$ele) * 3.28084
+```
+
 Fix a stupid bug in get_map.
 See [ggmap stamen watercolor png error](http://stackoverflow.com/a/24301510).
 Shouldn't need to do this with ggmap 2.4.
@@ -47,6 +71,7 @@ get_stamenmap <- function (bbox = c(left = -95.80204, bottom = 29.38048, right =
     "toner"), crop = TRUE, messaging = FALSE, urlonly = FALSE, 
     filename = "ggmapTemp", color = c("color", "bw"), ...) 
 {
+    require(jpeg)
     args <- as.list(match.call(expand.dots = TRUE)[-1])
     argsgiven <- names(args)
     if ("bbox" %in% argsgiven) {
@@ -178,7 +203,7 @@ mapTabor <- get_map(location=gmean, maptype="terrain", source="stamen", zoom=16)
 ## Google Maps API Terms of Service : http://developers.google.com/maps/terms
 ```
 
-Plot course.
+Course map.
 
 
 ```r
@@ -190,4 +215,17 @@ ggmap(mapTabor, base_layer=ggplot(tracks, aes(x=lon, y=lat))) +
   theme(axis.text=element_blank(), axis.title=element_blank(), axis.ticks=element_blank())
 ```
 
-![plot of chunk 10K](./10KCourse_files/figure-html/10K.png) 
+![plot of chunk 10Kmap](./10KCourse_files/figure-html/10Kmap.png) 
+
+Elevation chart.
+
+
+```r
+ggplot(tracks, aes(x=distCumulative * 0.621371, y=ele)) +
+  geom_line(size=2) +
+  scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
+  scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
+  labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K")
+```
+
+![plot of chunk 10Kelevation](./10KCourse_files/figure-html/10Kelevation.png) 
