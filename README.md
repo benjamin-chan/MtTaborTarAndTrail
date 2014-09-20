@@ -3,7 +3,7 @@ Benjamin Chan
 
 Course map for the [Friends of Mt Tabor Park Tar n Trail Run](http://www.runannie.net/).
 
-2014-09-19 16:32:59
+2014-09-20 07:22:58
 
 R version 3.1.1 (2014-07-10)
 
@@ -73,14 +73,15 @@ tracks$ele <- as.numeric(tracks$ele) * 3.28084
 
 Smooth the elevation data.
 The bandwidth parameter was set using trial-and-error.
-Use kernal smoothing instead of LOESS.
+Use LOESS.
 
 
 ```r
-smoothed <- ksmooth(tracks$distCumulativeMiles, tracks$ele, "normal", bandwidth=0.05)
-tracks$eleSmoothed <- smoothed$y
-# smoothed <- loess(ele ~ distCumulativeMiles, tracks, span=0.1)
-# tracks$eleSmoothed <- predict(smoothed)
+bw <- 0.02
+# smoothed <- ksmooth(tracks$distCumulativeMiles, tracks$ele, "normal", bandwidth=bw)
+# tracks$eleSmoothed <- smoothed$y
+smoothed <- loess(ele ~ distCumulativeMiles, tracks, span=bw)
+tracks$eleSmoothed <- predict(smoothed)
 ```
 
 Calculate elevation gain.
@@ -107,8 +108,8 @@ message(sprintf("Total distance: %.2f kilometers\nTotal elevation gain: %.0f fee
 
 ```
 ## Total distance: 10.02 kilometers
-## Total elevation gain: 941 feet
-## Total elevation loss: 837 feet
+## Total elevation gain: 990 feet
+## Total elevation loss: 885 feet
 ```
 
 Create `trail` variable.
@@ -133,11 +134,11 @@ continuity
 ## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
 ## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
 ##     distCumulative distCumulativeMiles mile eleSmoothed eleChange eleGain
-## 151          2.841               1.765    1       460.0     4.179   4.179
-## 284          5.975               3.713    3       481.5    -7.061   0.000
+## 151          2.841               1.765    1       505.4    -4.954   0.000
+## 284          5.975               3.713    3       501.5     7.992   7.992
 ##     eleLoss trail
-## 151   0.000   Red
-## 284   7.061  Blue
+## 151   4.954   Red
+## 284   0.000  Blue
 ```
 
 ```r
@@ -150,11 +151,11 @@ continuity
 ## 151 -122.6 45.52 505.6 2014-09-14T15:34:32Z         84         0.01799
 ## 284 -122.6 45.52 501.6 2014-09-14T15:53:50Z         63         0.03736
 ##     distCumulative distCumulativeMiles mile eleSmoothed eleChange eleGain
-## 151          2.841               1.765    1       460.0     4.179   4.179
-## 284          5.975               3.713    3       481.5    -7.061   0.000
+## 151          2.841               1.765    1       505.4    -4.954   0.000
+## 284          5.975               3.713    3       501.5     7.992   7.992
 ##     eleLoss trail
-## 151   0.000 Green
-## 284   7.061 Green
+## 151   4.954 Green
+## 284   0.000 Green
 ```
 
 ```r
@@ -318,7 +319,7 @@ ggmap(mapTabor, base_layer=ggplot(tracks, aes(x=lon, y=lat, color=trail))) +
   annotate("text", label=milePosts[, "mile"], x=milePosts[, "lon"], y=milePosts[, "lat"], color="white") +
   scale_color_discrete("Trail") +
   labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K") +
-  theme(axis.text=element_blank(), axis.title=element_blank(), axis.ticks=element_blank())
+  theme(axis.text=element_blank(), axis.title=element_blank(), axis.ticks=element_blank(), legend.position="none")
 ```
 
 ![plot of chunk 10Kmap](./10KCourse_files/figure-html/10Kmap.png) 
@@ -330,13 +331,16 @@ Elevation chart.
 a1 <- sprintf("Total elevation gain: %.0f feet\nTotal elevation loss: %.0f feet",
               totalGain,
               totalLoss)
+a2 <- sprintf("Loess smoothing with bandwidth %.3f", bw)
 ggplot(tracks, aes(x=distCumulativeMiles, y=eleSmoothed, color=trail)) +
   geom_line(alpha=2/3, size=2) +
   scale_x_continuous("Distance (mile)", breaks=c(seq(0, 6))) +
   scale_y_continuous("Elevation (ft)", limits=c(0, max(tracks$ele))) +
   scale_color_discrete("Trail") +
   annotate("text", label=a1, x=Inf, y=0, hjust=1, vjust=0, size=theme_get()$text[["size"]]/4) +
-  labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K")
+  annotate("text", label=a2, x=-Inf, y=0, hjust=0, vjust=0, size=theme_get()$text[["size"]]/6) +
+  labs(title="Friends of Mt Tabor Park Tar n Trail Run 10K") + 
+  theme(legend.position="none")
 ```
 
 ![plot of chunk 10Kelevation](./10KCourse_files/figure-html/10Kelevation.png) 
